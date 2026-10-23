@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROFIT Logistics — Транспортная логистика</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Авторизация -->
+<div id="authModal" class="auth-overlay">
+  <div class="auth-window">
+    <div class="auth-brand">
+      <div class="logo">PL</div>
+      <h2>PROFIT <span>Logistics</span></h2>
+      <p>Профессиональная система транспортной логистики</p>
+    </div>
+    <input type="text" id="loginUser" class="auth-input" placeholder="Email" value="m.ivanov@profit.ru">
+    <input type="password" id="loginPass" class="auth-input" placeholder="Пароль" value="admin123">
+    <button class="btn-auth" onclick="doLogin()">Войти в систему →</button>
+    <div id="authError" class="auth-error"></div>
+    <div class="auth-hint"><b>Тестовый доступ:</b><br>Email: m.ivanov@profit.ru<br>Пароль: admin123</div>
+  </div>
+</div>
+
+<!-- Приложение -->
+<div id="mainApp">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">PL</div>
+      <div>
+        <h1>PROFIT <span>Logistics</span></h1>
+        <small>Транспортная логистика · личный кабинет</small>
+      </div>
+    </div>
+    <div class="user-box">
+      <div class="avatar">МИ</div>
+      <span id="userName">Иванов Максим Денисович</span>
+      <button class="btn-logout" onclick="doLogout()">Выйти</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="orders" onclick="switchTab('orders', this)">📋 Заявки</button>
+    <button class="tab-btn" data-tab="calc" onclick="switchTab('calc', this)">💰 Расчёт стоимости</button>
+    <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Аналитика</button>
+    <button class="tab-btn" data-tab="archive" onclick="switchTab('archive', this)">🗄️ Архив</button>
+    <button class="tab-btn" data-tab="profile" onclick="switchTab('profile', this)">👤 Личный кабинет</button>
+  </div>
+
+  <!-- Заявки -->
+  <div id="tab-orders" class="tab-content">
+    <div class="card">
+      <h2>Справочник заявок</h2>
+      <div class="filters-bar">
+        <input type="text" id="searchOrders" placeholder="Поиск по клиенту..." oninput="renderOrders()">
+        <button class="btn btn-primary" onclick="openOrderModal()">+ Добавить заявку</button>
+        <button class="btn btn-success" onclick="exportOrdersJSON()">Экспорт JSON</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Клиент</th><th>Маршрут</th><th>Расст., км</th><th>Вес, т</th><th>Тип ТС</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Расчёт -->
+  <div id="tab-calc" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Расчёт стоимости перевозки</h2>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="val" id="statCount">0</div><div class="lbl">Заявок</div></div>
+        <div class="stat-card"><div class="val" id="statTotal">0 ₽</div><div class="lbl">Общая стоимость</div></div>
+        <div class="stat-card"><div class="val" id="statAvg">0 ₽</div><div class="lbl">Средняя стоимость</div></div>
+      </div>
+      <div class="filters-bar">
+        <button class="btn btn-primary" onclick="renderCalc()">Рассчитать</button>
+        <button class="btn btn-success" onclick="savePayroll()">Сохранить в архив</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Клиент</th><th>Маршрут</th><th>Расст., км</th><th>Вес, т</th><th>Тип ТС</th><th>Доп. услуги</th><th>Стоимость, ₽</th></tr></thead>
+          <tbody id="calcBody"></tbody>
+          <tfoot id="calcFooter"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Аналитика -->
+  <div id="tab-analytics" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Аналитика временных затрат</h2>
+      <p style="color: var(--muted); margin-bottom: 20px; font-size: 14px;">
+        Сравнение времени на обработку заявок вручную (Excel) и с помощью системы. 
+        <br><i>*Расчёт основан на нормативе 4,33 минуты на 1 заявку вручную и 0,56 минуты в системе.</i>
+      </p>
+      
+      <div style="text-align: center;">
+        <div class="chart-container">
+          <div class="bar-group">
+            <div class="bar bar-manual" id="barManual" style="height: 100%;">
+              <div class="bar-value" id="valManual">0 мин</div>
+            </div>
+            <div class="bar-label">Ручной расчёт<br>(Excel)</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar bar-auto" id="barAuto" style="height: 0%;">
+              <div class="bar-value" id="valAuto">0 мин</div>
+            </div>
+            <div class="bar-label">Автоматизированный<br>(Веб-приложение)</div>
+          </div>
+        </div>
+        <div class="legend-text" id="legendText">
+          Сокращение времени в 0 раз
+        </div>
+        <div style="margin-top: 30px;">
+          <button class="btn btn-primary" onclick="renderAnalytics()">🔄 Пересчитать диаграмму</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Архив -->
+  <div id="tab-archive" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Архив расчётов</h2>
+      <div class="filters-bar">
+        <select id="archMonth" onchange="renderArchive()">
+          <option value="">Все месяцы</option>
+          <option value="1">Январь</option><option value="2">Февраль</option><option value="3">Март</option>
+          <option value="4">Апрель</option><option value="5">Май</option><option value="6">Июнь</option>
+          <option value="7">Июль</option><option value="8">Август</option><option value="9">Сентябрь</option>
+          <option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option>
+        </select>
+        <select id="archYear" onchange="renderArchive()">
+          <option value="">Все годы</option><option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-danger" onclick="clearArchive()">Очистить архив</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Дата</th><th>Клиент</th><th>Маршрут</th><th>Период</th><th>Стоимость, ₽</th><th>Действия</th></tr></thead>
+          <tbody id="archiveBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Личный кабинет -->
+  <div id="tab-profile" class="tab-content" style="display:none">
+    <div class="card">
+      <h2>Личный кабинет логиста</h2>
+      <div class="profile-grid">
+        <div><b>ФИО:</b> Иванов Максим Денисович</div>
+        <div><b>Должность:</b> Логист, ведущий специалист по перевозкам</div>
+        <div><b>Email:</b> m.ivanov@profit.ru</div>
+        <div><b>Телефон:</b> +7 (920) 123-45-67</div>
+        <div><b>Кабинет:</b> 212, отдел логистики</div>
+        <div><b>Часы приёма:</b> Пн–Пт 09:00 – 18:00</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>История действий</h2>
+      <button class="btn btn-warning" onclick="clearHistory()">Очистить историю</button>
+      <div class="history-list" id="historyList" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2>Резервное копирование</h2>
+      <div class="filters-bar">
+        <button class="btn btn-success" onclick="exportFullBackup()">Экспорт всей базы (JSON)</button>
+        <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">Импорт базы (JSON)</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importFullBackup(event)">
+        <button class="btn btn-danger" onclick="resetAll()">Сбросить всё</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно заявки -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <h3>Новая заявка</h3>
+    <input type="text" id="oClient" placeholder="Клиент *">
+    <input type="text" id="oRoute" placeholder="Маршрут *">
+    <input type="number" id="oDistance" placeholder="Расстояние, км *" min="1">
+    <input type="number" id="oWeight" placeholder="Вес, т *" min="0.1" step="0.1">
+    <select id="oVehicle">
+      <option value="Фура">Фура</option>
+      <option value="Газель">Газель</option>
+      <option value="Рефрижератор">Рефрижератор</option>
+      <option value="Тент">Тент</option>
+    </select>
+    <input type="date" id="oDate">
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="closeOrderModal()">Отмена</button>
+      <button class="btn btn-success" onclick="saveOrder()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
